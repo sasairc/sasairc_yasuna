@@ -55,7 +55,7 @@ while (1) {
             } elsif ($tweet->{text} =~ /(お?うどん|o?udon)$/) {
                 $str = "\@" . "keep_off07" . " " . "🍜\n";
             } elsif ($tweet->{text} =~ /number [0-9]+$/) {
-                my $max = `yasuna -l | wc -l` - 1;
+                my $max = `yasuna -l | wc -l`;
                 our @number = split(/ /, $tweet->{text});
                 our $arrnum = @number - 1;
 
