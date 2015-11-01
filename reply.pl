@@ -13,12 +13,70 @@ use Net::Twitter::Lite::WithAPIv1_1;
 binmode STDOUT, ":utf8";
 
 sub time_stamp {
-    my $date = decode_utf8(`date +%c`);
+    my $date = decode_utf8(`LANG=C date +%c`);
 
     chomp($date);
     $date = $date . ": ";
 
     return $date;
+}
+
+sub if_message_type {
+    my $str     = "";
+
+    # ping pong
+    if ($_[0]->{text} =~ /ping$/) {
+        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (ping)\n";
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . "pong\n";
+
+    # system status
+    } elsif ($_[0]->{text} =~ /uptime$/) {
+        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (uptime)\n";
+
+        my $hostname    = decode_utf8(`hostname`);
+        my $uptime      = decode_utf8(`uptime`);
+
+        chomp($hostname);
+
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . $hostname . ": " . $uptime;
+
+    # oudon
+    } elsif ($_[0]->{text} =~ /(お?うどん|o?udon)$/) {
+        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (oudon)\n";
+
+        $str = "\@" . "keep_off07" . " " . "🍜\n";
+
+    # yasuna --number N option
+    } elsif ($_[0]->{text} =~ /(number|n) [0-9]+$/) {
+        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (number)\n";
+
+        my $max = `yasuna -l | wc -l`;
+        our @number = split(/ /, $_[0]->{text});
+        our $arrnum = @number - 1;
+
+        chomp($max);
+        chomp(@number);
+
+        if ($number[$arrnum] < $max) {
+            $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna -n $number[$arrnum]`);
+        } else {
+            $str = "\@" . $_[0]->{user}{screen_name} . " " . "え？何言ってるの？ ($max 以内で指定して下さい)\n";
+        }
+
+    # yasuna --version option
+    } elsif ($_[0]->{text} =~ /version$/) {
+        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (version)\n";
+
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna --version`);
+
+    # standard message
+    } else {
+        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (standard)\n";
+
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna`);
+    }
+
+    return $str;
 }
 
 my $config = (YAML::Tiny->read($FindBin::Bin . '/config.yml'))->[0];
@@ -35,6 +93,7 @@ my $done = AnyEvent::condvar;
 
 while (1) {
     print time_stamp() . "connected.\n";
+
     my $connected;
     my $listener = AnyEvent::Twitter::Stream->new(
         consumer_key    => $config->{'TWITTER_CONSUMER_KEY'},
@@ -48,31 +107,7 @@ while (1) {
             my $tweet   = shift;
             my $str     = "";
 
-            print time_stamp() . "$tweet->{user}{screen_name}: $tweet->{text}\n";
-
-            if ($tweet->{text} =~ /ping$/) {
-                $str = "\@" . ${tweet}->{user}{screen_name} . " " . "pong\n";
-            } elsif ($tweet->{text} =~ /(お?うどん|o?udon)$/) {
-                $str = "\@" . "keep_off07" . " " . "🍜\n";
-            } elsif ($tweet->{text} =~ /number [0-9]+$/) {
-                my $max = `yasuna -l | wc -l`;
-                our @number = split(/ /, $tweet->{text});
-                our $arrnum = @number - 1;
-
-                chomp($max);
-                chomp(@number);
-
-                if ($number[$arrnum] < $max) {
-                    $str = "\@" . ${tweet}->{user}{screen_name} . " " . decode_utf8(`yasuna -n $number[$arrnum]`);
-                } else {
-                    $str = "\@" . ${tweet}->{user}{screen_name} . " " . "え？何言ってるの？ ($max 以内で指定して下さい）\n";
-                }
-            } elsif ($tweet->{text} =~ /version$/) {
-                $str = "\@" . ${tweet}->{user}{screen_name} . " " . decode_utf8(`yasuna --version`);
-            } else {
-                $str = "\@" . ${tweet}->{user}{screen_name} . " " . decode_utf8(`yasuna`);
-            }
-
+            $str = if_message_type($tweet);
             print time_stamp() . "$str";
 
             $send_tweet->update($str);
@@ -99,4 +134,4 @@ while (1) {
     $wait_cv->recv;
 }
 
-exit 0;
+exit 1;
