@@ -76,6 +76,13 @@ sub if_message_type {
         $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna`);
     }
 
+    # check string length
+    if (length($str) > 140) {
+        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "ごめんなさい、文字数オーバーでした・・・" . "\n";
+    }
+
+    print time_stamp() . "$str";
+
     return $str;
 }
 
@@ -89,12 +96,10 @@ my $send_tweet = Net::Twitter::Lite::WithAPIv1_1->new (
     ssl => 1,
 );
 
-my $done = AnyEvent::condvar;
-
 while (1) {
-    print time_stamp() . "connected.\n";
-
+    my $done_cv = AE::cv;
     my $connected;
+
     my $listener = AnyEvent::Twitter::Stream->new(
         consumer_key    => $config->{'TWITTER_CONSUMER_KEY'},
         consumer_secret => $config->{'TWITTER_CONSUMER_SECRET'},
@@ -104,27 +109,33 @@ while (1) {
         track           => '@sasairc_yasuna',
         on_tweet        => sub {
             $connected = 1 unless $connected;
+
             my $tweet   = shift;
             my $str     = "";
 
             $str = if_message_type($tweet);
-            print time_stamp() . "$str";
 
             $send_tweet->update($str);
+        },
+        on_keepalive    => sub {
+            $connected = 1 unless $connected;
         },
         on_error        => sub {
             my $error = shift;
             warn "ERROR: $error";
-            $done->send;
+            $done_cv->send;
         },
         on_eof          => sub {
-            $done->send;
+            $done_cv->send;
         },
     );
-    $done->recv;
-
-    print time_stamp() . "unconnected.\n";
+    $done_cv->recv;
     undef $listener;
+
+    #
+    # wait after retry
+    #
+    print time_stamp() . "stream unconnected, wait after retry...\n";
 
     my $wait = $connected ? 0 : 3;
 
