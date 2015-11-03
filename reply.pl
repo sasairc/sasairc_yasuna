@@ -13,12 +13,9 @@ use Net::Twitter::Lite::WithAPIv1_1;
 binmode STDOUT, ":utf8";
 
 sub time_stamp {
-    my $date = decode_utf8(`LANG=C date +%c`);
+    my $time = localtime(time);
 
-    chomp($date);
-    $date = $date . ": ";
-
-    return $date;
+    return $time . ": ";
 }
 
 sub if_message_type {
@@ -26,12 +23,13 @@ sub if_message_type {
 
     # ping pong
     if ($_[0]->{text} =~ /ping$/) {
-        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (ping)\n";
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (ping)\n";
+
         $str = "\@" . $_[0]->{user}{screen_name} . " " . "pong\n";
 
     # system status
     } elsif ($_[0]->{text} =~ /uptime$/) {
-        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (uptime)\n";
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (uptime)\n";
 
         my $hostname    = decode_utf8(`hostname`);
         my $uptime      = decode_utf8(`uptime`);
@@ -42,13 +40,13 @@ sub if_message_type {
 
     # oudon
     } elsif ($_[0]->{text} =~ /(お?うどん|o?udon)$/) {
-        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (oudon)\n";
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (oudon)\n";
 
         $str = "\@" . "keep_off07" . " " . "🍜\n";
 
     # yasuna --number N option
     } elsif ($_[0]->{text} =~ /(number|n) [0-9]+$/) {
-        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (number)\n";
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (number)\n";
 
         my $max = `yasuna -l | wc -l`;
         our @number = split(/ /, $_[0]->{text});
@@ -65,23 +63,23 @@ sub if_message_type {
 
     # yasuna --version option
     } elsif ($_[0]->{text} =~ /version$/) {
-        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (version)\n";
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (version)\n";
 
         $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna --version`);
 
     # standard message
     } else {
-        print time_stamp() . "$_[0]->{user}{screen_name}: $_[0]->{text} (standard)\n";
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (standard)\n";
 
         $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna`);
     }
 
     # check string length
     if (length($str) > 140) {
-        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "ごめんなさい、文字数オーバーでした・・・" . "\n";
+        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "ごめんなさい、文字数オーバーでした・・・\n";
     }
 
-    print time_stamp() . "$str";
+    print time_stamp() . "send: $str";
 
     return $str;
 }
@@ -122,7 +120,7 @@ while (1) {
         },
         on_error        => sub {
             my $error = shift;
-            warn "ERROR: $error";
+            warn time_stamp() . "error: $error\n";
             $done_cv->send;
         },
         on_eof          => sub {
