@@ -113,7 +113,12 @@ while (1) {
 
             $str = if_message_type($tweet);
 
-            $send_tweet->update($str);
+            $send_tweet->update(
+                {
+                    status                  => $str,
+                    in_reply_to_status_id   => $tweet->{id},
+                }
+            );
         },
         on_keepalive    => sub {
             $connected = 1 unless $connected;
