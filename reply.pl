@@ -72,9 +72,17 @@ sub if_message_type {
 
     # oudon
     } elsif ($_[0]->{text} =~ /(お?うどん|o?udon)$/) {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (oudon)\n";
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (oudon)... ";
 
-        $str = "\@" . "keep_off07" . " " . "🍜\n";
+        if (check_user_on_white_list($_[0])) {
+            print "allow user\n";
+
+            $str = "\@" . "keep_off07" . " " . "🍜\n";
+        } else {
+            print "deny user\n";
+
+            $str = "\@" . $_[0]->{user}{screen_name} . " " . "おうどんをあげる許可がありません。\n";
+        }
 
     # yasuna --number N option
     } elsif ($_[0]->{text} =~ /(number|n)\s[0-9]+$/) {
@@ -115,8 +123,17 @@ sub if_message_type {
     return $str;
 }
 
-my $config = (YAML::Tiny->read($FindBin::Bin . '/config.yml'))->[0];
+my $white_list = (YAML::Tiny->read($FindBin::Bin . '/white_list.yml'))->[0];
+sub check_user_on_white_list {
+    for (my $i = 0; $i < @{$white_list->{allow}}; $i++) {
+        if ($white_list->{allow}[$i] eq $_[0]->{user}{screen_name}) {
+            return 1;   # allow
+        }
+    }
+    return 0;           # deny
+}
 
+my $config = (YAML::Tiny->read($FindBin::Bin . '/config.yml'))->[0];
 my $send_tweet = Net::Twitter::Lite::WithAPIv1_1->new (
     consumer_key        => $config->{'TWITTER_CONSUMER_KEY'},
     consumer_secret     => $config->{'TWITTER_CONSUMER_SECRET'},
