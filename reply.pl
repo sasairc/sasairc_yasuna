@@ -18,6 +18,26 @@ sub time_stamp {
     return $time . ": ";
 }
 
+sub support_n_cipher {
+    my $str         = "";
+    my $seed        = "くそぅ";
+    my $delimiter   = "！";
+
+    if ($_[0] == 0) {
+        ($str = $_[1]->{text}) =~ /encode\s/;
+        $str = decode_utf8(`n_cipher encode --seed=$seed --delimiter=$delimiter "$'"`);
+    } else {
+        ($str = $_[1]->{text}) =~ /decode\s/;
+        $str = decode_utf8(`n_cipher decode --seed=$seed --delimiter=$delimiter "$'"`);
+    }
+    if ($?) {
+        $str = "暗号になってない！！\n";
+    }
+    $str = "\@" . $_[1]->{user}{screen_name} . " " . $str;
+
+    return $str;
+}
+
 sub if_message_type {
     my $str     = "";
 
@@ -38,6 +58,18 @@ sub if_message_type {
 
         $str = "\@" . $_[0]->{user}{screen_name} . " " . $hostname . ": " . $uptime;
 
+    # n_cipher encode
+    } elsif ($_[0]->{text} =~ /encode\s(.+)/) {
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (n_cipher: encode)\n";
+
+        $str = support_n_cipher(0, $_[0]);
+
+    # n_cipher decode
+    } elsif ($_[0]->{text} =~ /decode\s(.+)/) {
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (n_cipher: decode)\n";
+
+        $str = support_n_cipher(1, $_[0]);
+
     # oudon
     } elsif ($_[0]->{text} =~ /(お?うどん|o?udon)$/) {
         print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (oudon)\n";
@@ -45,7 +77,7 @@ sub if_message_type {
         $str = "\@" . "keep_off07" . " " . "🍜\n";
 
     # yasuna --number N option
-    } elsif ($_[0]->{text} =~ /(number|n) [0-9]+$/) {
+    } elsif ($_[0]->{text} =~ /(number|n)\s[0-9]+$/) {
         print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (number)\n";
 
         my $max = `yasuna -l | wc -l`;
@@ -58,7 +90,7 @@ sub if_message_type {
         if ($number[$arrnum] < $max) {
             $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna -n $number[$arrnum]`);
         } else {
-            $str = "\@" . $_[0]->{user}{screen_name} . " " . "え？何言ってるの？ ($max 以内で指定して下さい)\n";
+            $str = "\@" . $_[0]->{user}{screen_name} . " " . "numberは $max 以内で指定して下さい\n";
         }
 
     # yasuna --version option
@@ -75,11 +107,10 @@ sub if_message_type {
     }
 
     # check string length
-    if (length($str) > 140) {
-        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "ごめんなさい、文字数オーバーでした・・・\n";
+    if ((my $len = length($str)) > 140) {
+        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "何 $len 文字て！送信できないじゃん！\n";
     }
-
-    print time_stamp() . "send: $str";
+    print time_stamp() . "send: " . $str;
 
     return $str;
 }
