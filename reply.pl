@@ -93,6 +93,10 @@ sub time_stamp {
         $str = decode_utf8(`n_cipher decode --seed=$seed --delimiter=$delimiter "$'"`);
         if ($?) {
             $str = "暗号になってない！！\n";
+        } else {
+            if (!check_user_authority($_[0])) {
+                $str =~ s/\@/\@ /g;
+            }
         }
         $str = "\@" . $_[0]->{user}{screen_name} . " " . $str;
 
