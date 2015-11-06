@@ -12,43 +12,30 @@ use Net::Twitter::Lite::WithAPIv1_1;
 
 binmode STDOUT, ":utf8";
 
+# use logging
 sub time_stamp {
     my $time = localtime(time);
 
     return $time . ": ";
 }
 
-sub support_n_cipher {
-    my $str         = "";
-    my $seed        = "くそぅ";
-    my $delimiter   = "！";
-
-    if ($_[0] == 0) {
-        ($str = $_[1]->{text}) =~ /encode\s/;
-        $str = decode_utf8(`n_cipher encode --seed=$seed --delimiter=$delimiter "$'"`);
-    } else {
-        ($str = $_[1]->{text}) =~ /decode\s/;
-        $str = decode_utf8(`n_cipher decode --seed=$seed --delimiter=$delimiter "$'"`);
-    }
-    if ($?) {
-        $str = "暗号になってない！！\n";
-    }
-    $str = "\@" . $_[1]->{user}{screen_name} . " " . $str;
-
-    return $str;
-}
-
-sub if_message_type {
-    my $str     = "";
+#
+# special functions
+#
+{
+    my  $str = "";
 
     # ping pong
-    if ($_[0]->{text} =~ /ping$/) {
+    sub ping {
         print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (ping)\n";
 
-        $str = "\@" . $_[0]->{user}{screen_name} . " " . "pong\n";
+        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "pong\n";
+
+        return $str;
+    }
 
     # system status
-    } elsif ($_[0]->{text} =~ /uptime$/) {
+    sub uptime {
         print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (uptime)\n";
 
         my $hostname    = decode_utf8(`hostname`);
@@ -58,23 +45,14 @@ sub if_message_type {
 
         $str = "\@" . $_[0]->{user}{screen_name} . " " . $hostname . ": " . $uptime;
 
-    # n_cipher encode
-    } elsif ($_[0]->{text} =~ /encode\s(.+)/) {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (n_cipher: encode)\n";
+        return $str;
+    }
 
-        $str = support_n_cipher(0, $_[0]);
-
-    # n_cipher decode
-    } elsif ($_[0]->{text} =~ /decode\s(.+)/) {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (n_cipher: decode)\n";
-
-        $str = support_n_cipher(1, $_[0]);
-
-    # oudon
-    } elsif ($_[0]->{text} =~ /(お?うどん|o?udon)$/) {
+    # Oudon is a traditional noodle cuisine of Japan
+    sub oudon {
         print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (oudon)... ";
 
-        if (check_user_on_white_list($_[0])) {
+        if (check_user_authority($_[0])) {
             print "allow user\n";
 
             $str = "\@" . "keep_off07" . " " . "🍜\n";
@@ -84,11 +62,48 @@ sub if_message_type {
             $str = "\@" . $_[0]->{user}{screen_name} . " " . "おうどんをあげる許可がありません。\n";
         }
 
+        return $str;
+    }
+
+    # encode n_cipher
+    sub encode_n_cipher {
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (n_cipher: encode)\n";
+
+        my $seed        = "くそぅ";
+        my $delimiter   = "！";
+
+        ($str = $_[0]->{text}) =~ /encode\s/;
+        $str = decode_utf8(`n_cipher encode --seed=$seed --delimiter=$delimiter "$'"`);
+        if ($?) {
+            $str = "暗号になってない！！\n";
+        }
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . $str;
+
+        return $str;
+    }
+
+    # decode n_cipher
+    sub decode_n_cipher {
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (n_cipher: decode)\n";
+
+        my $seed        = "くそぅ";
+        my $delimiter   = "！";
+
+        ($str = $_[0]->{text}) =~ /decode\s/;
+        $str = decode_utf8(`n_cipher decode --seed=$seed --delimiter=$delimiter "$'"`);
+        if ($?) {
+            $str = "暗号になってない！！\n";
+        }
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . $str;
+
+        return $str;
+    }
+
     # yasuna --number N option
-    } elsif ($_[0]->{text} =~ /(number|n)\s[0-9]+$/) {
+    sub yasuna_number {
         print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (number)\n";
 
-        my $max = `yasuna -l | wc -l`;
+        my  $max    = `yasuna -l | wc -l`;
         our @number = split(/ /, $_[0]->{text});
         our $arrnum = @number - 1;
 
@@ -101,38 +116,76 @@ sub if_message_type {
             $str = "\@" . $_[0]->{user}{screen_name} . " " . "numberは $max 以内で指定して下さい\n";
         }
 
+        return $str;
+    }
+
     # yasuna --version option
-    } elsif ($_[0]->{text} =~ /version$/) {
+    sub yasuna_version {
         print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (version)\n";
 
         $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna --version`);
 
-    # standard message
-    } else {
+        return $str;
+    }
+}
+
+#
+# regex/function table
+#
+my %regex = (
+    'ping$'                 => \&ping,
+    'uptime$'               => \&uptime,
+    '(お?うどん|o?udon)$'   => \&oudon,
+    'encode\s(.+)'          => \&encode_n_cipher,
+    'decode\s(.+)'          => \&decode_n_cipher,
+    '(number|n)\s[0-9]+$'   => \&yasuna_number,
+    'version$'              => \&yasuna_version,
+);
+
+#
+# processing of message
+#
+sub if_message_type {
+    my $str = "";
+
+    # check special function
+    while (my ($key, $value) = each(%regex)) {
+        if ($_[0]->{text} =~ /$key/) {
+            $str = $value->($_[0]);
+        }
+    }
+    # is standard message
+    if ($str eq "") {
         print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (standard)\n";
 
         $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna`);
     }
-
-    # check string length
+    # checking string length
     if ((my $len = length($str)) > 140) {
         $str =  "\@" . $_[0]->{user}{screen_name} . " " . "何 $len 文字て！送信できないじゃん！\n";
     }
-    print time_stamp() . "send: " . $str;
+
+    print time_stamp() . "send: $str";
 
     return $str;
 }
 
-my $white_list = (YAML::Tiny->read($FindBin::Bin . '/white_list.yml'))->[0];
-sub check_user_on_white_list {
-    for (my $i = 0; $i < @{$white_list->{allow}}; $i++) {
-        if ($white_list->{allow}[$i] eq $_[0]->{user}{screen_name}) {
+#
+# check user authority
+#
+my $user = (YAML::Tiny->read($FindBin::Bin . '/user.yml'))->[0];
+sub check_user_authority {
+    for (my $i = 0; $i < @{$user->{allow}}; $i++) {
+        if ($user->{allow}[$i] eq $_[0]->{user}{screen_name}) {
             return 1;   # allow
         }
     }
     return 0;           # deny
 }
 
+#
+# main
+#
 my $config = (YAML::Tiny->read($FindBin::Bin . '/config.yml'))->[0];
 my $send_tweet = Net::Twitter::Lite::WithAPIv1_1->new (
     consumer_key        => $config->{'TWITTER_CONSUMER_KEY'},
