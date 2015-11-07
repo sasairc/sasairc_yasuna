@@ -31,7 +31,7 @@ EOF
 ```
 `periodic.pl`はcrontabへ登録して下さい。
 
-## アクセス制限
+## Permission
 
 一部機能に関しては、`user.yml`の`allow:`に含まれるユーザのみ使用することができます。
 
