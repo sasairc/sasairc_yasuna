@@ -7,8 +7,8 @@ use utf8;
 use Encode;
 use FindBin;
 use YAML::Tiny;
+use AnyEvent::Twitter;
 use AnyEvent::Twitter::Stream;
-use Net::Twitter::Lite::WithAPIv1_1;
 
 binmode STDOUT, ":utf8";
 
@@ -169,8 +169,6 @@ sub if_message_type {
         $str =  "\@" . $_[0]->{user}{screen_name} . " " . "何 $len 文字て！送信できないじゃん！\n";
     }
 
-    print time_stamp() . "send: $str";
-
     return $str;
 }
 
@@ -191,17 +189,17 @@ sub check_user_authority {
 # main
 #
 my $config = (YAML::Tiny->read($FindBin::Bin . '/config.yml'))->[0];
-my $send_tweet = Net::Twitter::Lite::WithAPIv1_1->new (
-    consumer_key        => $config->{'TWITTER_CONSUMER_KEY'},
-    consumer_secret     => $config->{'TWITTER_CONSUMER_SECRET'},
-    access_token        => $config->{'TWITTER_ACCESS_TOKEN'},
-    access_token_secret => $config->{'TWITTER_ACCESS_TOKEN_SECRET'},
-    ssl => 1,
-);
 
 while (1) {
     my $done_cv = AE::cv;
     my $connected;
+
+    my $sender = AnyEvent::Twitter->new(
+        consumer_key    => $config->{'TWITTER_CONSUMER_KEY'},
+        consumer_secret => $config->{'TWITTER_CONSUMER_SECRET'},
+        token           => $config->{'TWITTER_ACCESS_TOKEN'},
+        token_secret    => $config->{'TWITTER_ACCESS_TOKEN_SECRET'},
+    );
 
     my $listener = AnyEvent::Twitter::Stream->new(
         consumer_key    => $config->{'TWITTER_CONSUMER_KEY'},
@@ -218,12 +216,18 @@ while (1) {
 
             $str = if_message_type($tweet);
 
-            $send_tweet->update(
-                {
-                    status                  => $str,
-                    in_reply_to_status_id   => $tweet->{id},
-                }
-            );
+            $sender->post('statuses/update', {
+                status                  => $str,
+                in_reply_to_status_id   => $tweet->{id},
+            }, sub {
+                print time_stamp() . "send: $str";
+                my ($header, $response, $reason) = @_;
+                $done_cv->end;
+            });
+        },
+        on_connect      => sub {
+            $connected = 1 unless $connected;
+            print time_stamp() . "info: stream connected.\n";
         },
         on_keepalive    => sub {
             $connected = 1 unless $connected;
@@ -238,12 +242,14 @@ while (1) {
         },
     );
     $done_cv->recv;
-    undef $listener;
 
     #
     # wait after retry
     #
-    print time_stamp() . "stream unconnected, wait after retry...\n";
+    print time_stamp() . "info: stream unconnected, wait after retry...\n";
+
+    undef $sender;
+    undef $listener;
 
     my $wait = $connected ? 0 : 3;
 
@@ -252,5 +258,7 @@ while (1) {
 
     $wait_cv->recv;
 }
+
+print time_stamp() . "error: Abort.\n";
 
 exit 1;
