@@ -14,8 +14,8 @@ sasairc_yasuna
 FindBin
 YAML::Tiny
 Net::OAuth
+AnyEvent::Twitter
 AnyEvent::Twitter::Stream 
-Net::Twitter::Lite::WithAPIv1_1
 ```
 
 ## Usage
