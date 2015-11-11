@@ -14,9 +14,9 @@ binmode STDOUT, ":utf8";
 
 # use logging
 sub time_stamp {
-    my $time = localtime(time);
+    my $time    = localtime(time);
 
-    return $time . ": ";
+    return $time . " $0" . "[$$]: ";
 }
 
 #
@@ -61,6 +61,15 @@ sub time_stamp {
 
             $str = "\@" . $_[0]->{user}{screen_name} . " " . "おうどんをあげる許可がありません。\n";
         }
+
+        return $str;
+    }
+
+    # fish age
+    sub osakana {
+        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (osakana)... ";
+
+        $str = "\@" . "sasairc_2" . " " . "🐟\n";
 
         return $str;
     }
@@ -140,6 +149,7 @@ my %regex = (
     'ping$'                 => \&ping,
     'uptime$'               => \&uptime,
     '(お?うどん|o?udon)$'   => \&oudon,
+    '(お?さかな|o?sakana)$' => \&osakana,
     'encode\s(.+)'          => \&encode_n_cipher,
     'decode\s(.+)'          => \&decode_n_cipher,
     '(number|n)\s[0-9]+$'   => \&yasuna_number,
@@ -166,7 +176,7 @@ sub if_message_type {
     }
     # checking string length
     if ((my $len = length($str)) > 140) {
-        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "何 $len 文字て！送信できないじゃん！\n";
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . "何 $len 文字て！送信できないじゃん！\n";
     }
 
     return $str;
@@ -220,10 +230,10 @@ while (1) {
                 status                  => $str,
                 in_reply_to_status_id   => $tweet->{id},
             }, sub {
-                print time_stamp() . "send: $str";
                 my ($header, $response, $reason) = @_;
-                $done_cv->end;
+                print time_stamp() . "send: $str";
             });
+            $done_cv->end;
         },
         on_connect      => sub {
             $connected = 1 unless $connected;
