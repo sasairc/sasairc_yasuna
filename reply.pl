@@ -12,7 +12,9 @@ use AnyEvent::Twitter::Stream;
 
 binmode STDOUT, ":utf8";
 
+#
 # use logging
+#
 sub time_stamp {
     my $time    = localtime(time);
 
@@ -27,8 +29,6 @@ sub time_stamp {
 
     # ping pong
     sub ping {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (ping)\n";
-
         $str =  "\@" . $_[0]->{user}{screen_name} . " " . "pong\n";
 
         return $str;
@@ -36,8 +36,6 @@ sub time_stamp {
 
     # system status
     sub uptime {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (uptime)\n";
-
         my $hostname    = decode_utf8(`hostname`);
         my $uptime      = decode_utf8(`uptime`);
 
@@ -50,14 +48,12 @@ sub time_stamp {
 
     # Oudon is a traditional noodle cuisine of Japan
     sub oudon {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (oudon)... ";
-
         if (check_user_authority($_[0])) {
-            print "allow user\n";
+            print time_stamp() . "allow user\n";
 
             $str = "\@" . "keep_off07" . " " . "🍜\n";
         } else {
-            print "deny user\n";
+            print time_stamp() . "deny user\n";
 
             $str = "\@" . $_[0]->{user}{screen_name} . " " . "おうどんをあげる許可がありません。\n";
         }
@@ -67,8 +63,6 @@ sub time_stamp {
 
     # fish age
     sub osakana {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (osakana)... ";
-
         $str = "\@" . "sasairc_2" . " " . "🐟\n";
 
         return $str;
@@ -76,8 +70,6 @@ sub time_stamp {
 
     # encode n_cipher
     sub encode_n_cipher {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (n_cipher: encode)\n";
-
         my $seed        = "くそぅ";
         my $delimiter   = "！";
 
@@ -93,8 +85,6 @@ sub time_stamp {
 
     # decode n_cipher
     sub decode_n_cipher {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (n_cipher: decode)\n";
-
         my $seed        = "くそぅ";
         my $delimiter   = "！";
 
@@ -114,8 +104,6 @@ sub time_stamp {
 
     # yasuna --number N option
     sub yasuna_number {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (number)\n";
-
         my  $max    = `yasuna -l | wc -l`;
         our @number = split(/ /, $_[0]->{text});
         our $arrnum = @number - 1;
@@ -134,8 +122,6 @@ sub time_stamp {
 
     # yasuna --version option
     sub yasuna_version {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (version)\n";
-
         $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna --version`);
 
         return $str;
@@ -165,6 +151,8 @@ sub if_message_type {
     # check special function
     while (my ($key, $value) = each(%regex)) {
         if ($_[0]->{text} =~ /$key/) {
+            print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} ($key)\n";
+
             $str = $value->($_[0]);
         }
     }
