@@ -141,8 +141,8 @@ sub time_stamp {
 my %regex = (
     'ping$'                                     => \&ping,
     'uptime$'                                   => \&uptime,
-    '^(?!.*talk).*(?=(お?うどん|o?udon)).*$'    => \&oudon,
-    '^(?!.*talk).*(?=(お?さかな|o?sakana)).*$'  => \&osakana,
+    '^@sasairc_yasuna\s(お?うどん|o?udon)$'     => \&oudon,
+    '^@sasairc_yasuna\s(お?さかな|o?sakana)$'   => \&osakana,
     'encode\s(.+)'                              => \&encode_n_cipher,
     'decode\s(.+)'                              => \&decode_n_cipher,
     'talk(?:.*)\z'                              => \&yasuna_talk,
