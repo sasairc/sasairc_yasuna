@@ -102,6 +102,13 @@ sub time_stamp {
         return $str;
     }
 
+    # yasuna will talk 
+    sub yasuna_talk {
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna`);
+
+        return $str;
+    }
+
     # yasuna --number N option
     sub yasuna_number {
         my  $max    = `yasuna -l | wc -l`;
@@ -132,14 +139,15 @@ sub time_stamp {
 # regex/function table
 #
 my %regex = (
-    'ping$'                 => \&ping,
-    'uptime$'               => \&uptime,
-    '(お?うどん|o?udon)$'   => \&oudon,
-    '(お?さかな|o?sakana)$' => \&osakana,
-    'encode\s(.+)'          => \&encode_n_cipher,
-    'decode\s(.+)'          => \&decode_n_cipher,
-    '(number|n)\s[0-9]+$'   => \&yasuna_number,
-    'version$'              => \&yasuna_version,
+    'ping$'                                     => \&ping,
+    'uptime$'                                   => \&uptime,
+    '^(?!.*talk).*(?=(お?うどん|o?udon)).*$'    => \&oudon,
+    '^(?!.*talk).*(?=(お?さかな|o?sakana)).*$'  => \&osakana,
+    'encode\s(.+)'                              => \&encode_n_cipher,
+    'decode\s(.+)'                              => \&decode_n_cipher,
+    'talk(?:.*)\z'                              => \&yasuna_talk,
+    '(number|n)\s[0-9]+$'                       => \&yasuna_number,
+    'version$'                                  => \&yasuna_version,
 );
 
 #
@@ -155,12 +163,6 @@ sub if_message_type {
 
             $str = $value->($_[0]);
         }
-    }
-    # is standard message
-    if ($str eq "") {
-        print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} (standard)\n";
-
-        $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna`);
     }
     # checking string length
     if ((my $len = length($str)) > 140) {
@@ -212,15 +214,15 @@ while (1) {
             my $tweet   = shift;
             my $str     = "";
 
-            $str = if_message_type($tweet);
-
-            $sender->post('statuses/update', {
-                status                  => $str,
-                in_reply_to_status_id   => $tweet->{id},
-            }, sub {
-                my ($header, $response, $reason) = @_;
-                print time_stamp() . "send: $str";
-            });
+            if (($str = if_message_type($tweet)) ne "") {
+                $sender->post('statuses/update', {
+                    status                  => $str,
+                    in_reply_to_status_id   => $tweet->{id},
+                }, sub {
+                    my ($header, $response, $reason) = @_;
+                    print time_stamp() . "send: $str";
+                });
+            }
             $done_cv->end;
         },
         on_connect      => sub {
