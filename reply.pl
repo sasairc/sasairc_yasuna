@@ -13,12 +13,23 @@ use AnyEvent::Twitter::Stream;
 binmode STDOUT, ":utf8";
 
 #
-# use logging
+# logging
 #
 sub time_stamp {
     my $time    = localtime(time);
 
     return $time . " $0" . "[$$]: ";
+}
+
+sub print_log {
+    my ($level, $msg) = @_;
+
+    chomp($level);
+    chomp($msg);
+
+    print time_stamp() . "$level: $msg\n";
+
+    return;
 }
 
 #
@@ -29,7 +40,7 @@ sub time_stamp {
 
     # ping pong
     sub ping {
-        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "pong\n";
+        $str =  "\@" . $_[0]->{user}{screen_name} . " " . "pong";
 
         return $str;
     }
@@ -49,13 +60,13 @@ sub time_stamp {
     # Oudon is a traditional noodle cuisine of Japan
     sub oudon {
         if (check_user_authority($_[0])) {
-            print time_stamp() . "allow user\n";
+            print_log("info", "allow user");
 
-            $str = "\@" . "keep_off07" . " " . "🍜\n";
+            $str = "\@" . "keep_off07" . " " . "🍜";
         } else {
-            print time_stamp() . "deny user\n";
+            print_log("info", "deny user");
 
-            $str = "\@" . $_[0]->{user}{screen_name} . " " . "おうどんをあげる許可がありません。\n";
+            $str = "\@" . $_[0]->{user}{screen_name} . " " . "おうどんをあげる許可がありません。";
         }
 
         return $str;
@@ -63,7 +74,7 @@ sub time_stamp {
 
     # fish age
     sub osakana {
-        $str = "\@" . "sasairc_2" . " " . "🐟\n";
+        $str = "\@" . "sasairc_2" . " " . "🐟";
 
         return $str;
     }
@@ -76,7 +87,7 @@ sub time_stamp {
         ($str = $_[0]->{text}) =~ /encode\s/;
         $str = decode_utf8(`n_cipher encode --seed=$seed --delimiter=$delimiter "$'"`);
         if ($?) {
-            $str = "暗号になってない！！\n";
+            $str = "暗号になってない！！";
         }
         $str = "\@" . $_[0]->{user}{screen_name} . " " . $str;
 
@@ -91,7 +102,7 @@ sub time_stamp {
         ($str = $_[0]->{text}) =~ /decode\s/;
         $str = decode_utf8(`n_cipher decode --seed=$seed --delimiter=$delimiter "$'"`);
         if ($?) {
-            $str = "暗号になってない！！\n";
+            $str = "暗号になってない！！";
         } else {
             if (!check_user_authority($_[0])) {
                 $str =~ s/\@/\@ /g;
@@ -121,7 +132,7 @@ sub time_stamp {
         if ($number[$arrnum] < $max) {
             $str = "\@" . $_[0]->{user}{screen_name} . " " . decode_utf8(`yasuna -n $number[$arrnum]`);
         } else {
-            $str = "\@" . $_[0]->{user}{screen_name} . " " . "numberは $max 以内で指定して下さい\n";
+            $str = "\@" . $_[0]->{user}{screen_name} . " " . "numberは $max 以内で指定して下さい";
         }
 
         return $str;
@@ -159,14 +170,14 @@ sub if_message_type {
     # check special function
     while (my ($key, $value) = each(%regex)) {
         if ($_[0]->{text} =~ /$key/) {
-            print time_stamp() . "recv: " . "$_[0]->{user}{screen_name}: $_[0]->{text} ($key)\n";
+            print_log("recv", "$_[0]->{user}{screen_name}: $_[0]->{text} ($key)");
 
             $str = $value->($_[0]);
         }
     }
     # checking string length
     if ((my $len = length($str)) > 140) {
-        $str = "\@" . $_[0]->{user}{screen_name} . " " . "何 $len 文字て！送信できないじゃん！\n";
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . "何 $len 文字て！送信できないじゃん！";
     }
 
     return $str;
@@ -220,21 +231,21 @@ while (1) {
                     in_reply_to_status_id   => $tweet->{id},
                 }, sub {
                     my ($header, $response, $reason) = @_;
-                    print time_stamp() . "send: $str";
+                    print_log("send",  $str);
                 });
             }
             $done_cv->end;
         },
         on_connect      => sub {
             $connected = 1 unless $connected;
-            print time_stamp() . "info: stream connected.\n";
+            print_log("info", "stream connected.");
         },
         on_keepalive    => sub {
             $connected = 1 unless $connected;
         },
         on_error        => sub {
             my $error = shift;
-            warn time_stamp() . "error: $error\n";
+            print_log("error", $error);
             $done_cv->send;
         },
         on_eof          => sub {
@@ -246,7 +257,7 @@ while (1) {
     #
     # wait after retry
     #
-    print time_stamp() . "info: stream unconnected, wait after retry...\n";
+    print_log("info", "stream unconnected, wait after retry...");
 
     undef $sender;
     undef $listener;
@@ -259,6 +270,6 @@ while (1) {
     $wait_cv->recv;
 }
 
-print time_stamp() . "error: Abort.\n";
+print_log("error", "abort.");
 
 exit 1;
