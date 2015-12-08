@@ -1,7 +1,7 @@
 PREFIX	:= /usr/local
 CC	= cc
 RM	= rm
-CFLAGS	:= -Wall -O3 -fomit-frame-pointer -fforce-addr -ffast-math -Wall -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7-a -mfloat-abi=hard
+CFLAGS	:= -O3 -fomit-frame-pointer -fforce-addr -ffast-math -Wall -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7-a -mfloat-abi=hard
 LDFLAGS	= -lncipher
 
 all: n_cipher_encode n_cipher_decode
