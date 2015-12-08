@@ -82,7 +82,7 @@ sub print_log {
     # encode n_cipher
     sub encode_n_cipher {
         ($str = $_[0]->{text}) =~ /encode\s/;
-        $str = decode_utf8(`encode_n_cipher "$'"`);
+        $str = decode_utf8(`n_cipher_encode "$'"`);
         if ($?) {
             $str = "暗号になってない！！";
         }
@@ -94,7 +94,7 @@ sub print_log {
     # decode n_cipher
     sub decode_n_cipher {
         ($str = $_[0]->{text}) =~ /decode\s/;
-        $str = decode_utf8(`decode_n_cipher "$'"`);
+        $str = decode_utf8(`n_cipher_decode "$'"`);
         if ($?) {
             $str = "暗号になってない！！";
         } else {
