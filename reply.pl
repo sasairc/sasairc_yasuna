@@ -212,7 +212,7 @@ while (1) {
         token           => $config->{'TWITTER_ACCESS_TOKEN'},
         token_secret    => $config->{'TWITTER_ACCESS_TOKEN_SECRET'},
         method          => 'filter',
-        track           => '@sasairc_yasuna',
+        track           => $config->{'TWITTER_BOT_SCREEN_NAME'},
         on_tweet        => sub {
             $connected = 1 unless $connected;
 
