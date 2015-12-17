@@ -10,6 +10,7 @@ sasairc_yasuna
 ## Requirements
 
 `yasuna`と`n_cipher`に加えて、`perl5`で用いる下記ライブラリが必要です。
+
 ```perl5
 FindBin
 YAML::Tiny
@@ -22,6 +23,7 @@ AnyEvent::Twitter::Stream
 
 ```shellsession
 % cat <<EOF > config.yml
+TWITTER_BOT_SCREEN_NAME:        '@sasairc_yasuna'
 TWITTER_CONSUMER_KEY:           ''
 TWITTER_CONSUMER_SECRET:        ''
 TWITTER_ACCESS_TOKEN:           ''
@@ -29,6 +31,7 @@ TWITTER_ACCESS_TOKEN_SECRET:    ''
 EOF
 % nohup ./reply.pl &!
 ```
+
 `periodic.pl`はcrontabへ登録して下さい。
 
 ## Permission
