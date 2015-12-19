@@ -45,6 +45,15 @@ sub print_log {
         return $str;
     }
 
+    # revision sasairc_yasuna
+    sub revision {
+        my $sha =   decode_utf8(`git -C $FindBin::Bin rev-parse HEAD`);
+        
+        $str = "\@" . $_[0]->{user}{screen_name} . " " . "sasairc_yasuna: $sha";
+
+        return $str;
+    }
+
     # system status
     sub uptime {
         my $hostname    = decode_utf8(`hostname`);
@@ -145,6 +154,7 @@ sub print_log {
 #
 my %regex = (
     'ping$'                                     => \&ping,
+    'revision$'                                 => \&revision,
     'uptime$'                                   => \&uptime,
     '^@sasairc_yasuna\s(お?うどん|o?udon)$'     => \&oudon,
     '^@sasairc_yasuna\s(お?さかな|o?sakana)$'   => \&osakana,

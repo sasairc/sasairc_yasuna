@@ -51,6 +51,7 @@ EOF
 |oudon|^(お?うどん&#x7C;o?udon)$|[@keep_off07](https://twitter.com/keep_off07)さんにおうどん :ramen: をあげる [※2](#note2)|
 |osakana|^(お?さかな&#x7C;o?sakana)$|[@sasairc_2](https://twitter.com/sasairc_2)におさかな :fish: をあげる|
 |uptime|uptime$|稼働システムのuptimeを通知する|
+|revision|revision$|稼働中スクリプトのリビジョンを通知する|
 |talk|talk(?:.\*)\z|しゃべる|
 
 <a name ="note1">※1 許可されたユーザのみ、デコード結果でリプライすることが可能。  
