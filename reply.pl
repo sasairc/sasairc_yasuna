@@ -243,6 +243,13 @@ while (1) {
         on_connect      => sub {
             $connected = 1 unless $connected;
             print_log("info", "stream connected.");
+
+            $sender->post('statuses/update', {
+                status  => "pong",
+            }, sub {
+                my ($header, $response, $reason) = @_;
+            });
+            $done_cv->end;
         },
         on_keepalive    => sub {
             $connected = 1 unless $connected;
