@@ -1,4 +1,7 @@
 #!/usr/bin/perl
+#
+# yasunaのslack移植
+#
 
 use strict;
 use warnings;
@@ -16,34 +19,34 @@ use YAML::Tiny;
 # special functions
 #
 {
-	my	$str = "";
+    my  $str = "";
 
-	# ping pong
-	sub ping {
-		$str = "pong";
+    # ping pong
+    sub ping {
+        $str = "pong";
 
-		return $str;
-	}
+        return $str;
+    }
 
-	# revision slack_yasuna
-	sub revision {
-		my $sha	= decode_utf8(`git -C $FindBin::Bin rev-parse HEAD`);
-		
-		$str = "slack_yasuna: $sha";
+    # revision slack_yasuna
+    sub revision {
+        my $sha = decode_utf8(`git -C $FindBin::Bin rev-parse HEAD`);
+        
+        $str = "slack_yasuna: $sha";
 
-		return $str;
-	}
-	
-	# system uptime
-	sub uptime {
-		my $hostname	= decode_utf8(`hostname`);
-		my $uptime		= decode_utf8(`uptime`);
+        return $str;
+    }
+    
+    # system uptime
+    sub uptime {
+        my $hostname    = decode_utf8(`hostname`);
+        my $uptime      = decode_utf8(`uptime`);
 
-		chomp($hostname);
-		$str = $hostname . ": " . $uptime;
+        chomp($hostname);
+        $str = $hostname . ": " . $uptime;
 
-		return $str;
-	}
+        return $str;
+    }
 
     # encode n_cipher
     sub encode_n_cipher {
@@ -71,49 +74,49 @@ use YAML::Tiny;
         return $str;
     }
 
-	# yasuna will talk
-	sub yasuna_talk {
-		$str = decode_utf8(`yasuna`);
-	}
+    # yasuna will talk
+    sub yasuna_talk {
+        $str = decode_utf8(`yasuna`);
+    }
 
-	# yasuna --number N option
-	sub yasuna_number {
-		my	$max	= `yasuna -l | wc -l`;
-		our	@number	= split(/ /, $_[0]->{text});
-		our	$arrnum	= @number - 1;
+    # yasuna --number N option
+    sub yasuna_number {
+        my  $max    = `yasuna -l | wc -l`;
+        our @number = split(/ /, $_[0]->{text});
+        our $arrnum = @number - 1;
 
-		chomp($max);
-		chomp(@number);
+        chomp($max);
+        chomp(@number);
 
-		if ($number[$arrnum] < $max) {
-			$str = decode_utf8(`yasuna -n $number[$arrnum]`);
-		} else {
-			$str = "numberは $max 以内で指定して下さい";
-		}
+        if ($number[$arrnum] < $max) {
+            $str = decode_utf8(`yasuna -n $number[$arrnum]`);
+        } else {
+            $str = "numberは $max 以内で指定して下さい";
+        }
 
-		return $str;
-	}
+        return $str;
+    }
 
-	# yasuna --version option
-	sub yasuna_version {
-		$str = decode_utf8(`yasuna --version`);
+    # yasuna --version option
+    sub yasuna_version {
+        $str = decode_utf8(`yasuna --version`);
 
-		return $str;
-	}
+        return $str;
+    }
 }
 
 #
 # regex/function table
 #
 my %regex = (
-    'ping$'					=> \&ping,
-    'revision$'				=> \&revision,
-    'uptime$'				=> \&uptime,
-    'encode\s(.+)'			=> \&encode_n_cipher,
-    'decode\s(.+)'			=> \&decode_n_cipher,
-    'talk(?:.*)\z'			=> \&yasuna_talk,
-    '(number|n)\s[0-9]+$'	=> \&yasuna_number,
-    'version$'				=> \&yasuna_version,
+    'ping$'                 => \&ping,
+    'revision$'             => \&revision,
+    'uptime$'               => \&uptime,
+    'encode\s(.+)'          => \&encode_n_cipher,
+    'decode\s(.+)'          => \&decode_n_cipher,
+    'talk(?:.*)\z'          => \&yasuna_talk,
+    '(number|n)\s[0-9]+$'   => \&yasuna_number,
+    'version$'              => \&yasuna_version,
 );
 
 #
@@ -138,28 +141,28 @@ sub if_message_type {
 my $config = (YAML::Tiny->read($FindBin::Bin . '/config.yml'))->[0];
 
 my $bot = Slack::RTM::Bot->new(
-	token => $config->{'token'}
+    token => $config->{'token'}
 );
 
 $bot->add_action(
-	{
-		channel	=> $config->{'channel'},
-		type	=> $config->{'type'},
-		text	=> $config->{'text'},
-	}, sub {
-		my $str = if_message_type(@_);
+    {
+        channel => $config->{'channel'},
+        type    => $config->{'type'},
+        text    => $config->{'text'},
+    }, sub {
+        my $str = if_message_type(@_);
 
-		my $req = POST 'https://slack.com/api/chat.postMessage',
-			'Content'	=> [
-				token		=> $config->{'token'},
-				channel		=> "#" . $config->{'channel'},
-				username	=> $config->{'username'},
-				icon_url	=> $config->{'icon_url'},
-				text		=> $str,
-			];
+        my $req = POST 'https://slack.com/api/chat.postMessage',
+            'Content'   => [
+                token       => $config->{'token'},
+                channel     => "#" . $config->{'channel'},
+                username    => $config->{'username'},
+                icon_url    => $config->{'icon_url'},
+                text        => $str,
+            ];
 
-		my $res = Furl->new->request($req);
-	}
+        my $res = Furl->new->request($req);
+    }
 );
 
 $bot->start_RTM;
