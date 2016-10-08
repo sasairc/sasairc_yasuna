@@ -1,0 +1,6 @@
+token:      ""
+channel:    "general"
+username:   "やすな"
+icon_url:   "http://ssiserver.moe.hm/pub/sasairc_yasuna.png"
+type:       "message"
+text:       "^yasuna.*"
