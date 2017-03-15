@@ -46,7 +46,7 @@ EOF
 |:-----:|-------|-----------|
 |encode `STR`|encode\s(.+)|N暗号のエンコード|
 |decode `STR`|decode\s(.+)|N暗号のデコード [※1](#note1)|
-|number `INT`|(number&#x7C;n)\s[0-9]+$|指定した番号`INT`の台詞を出力|
+|number `INT`|(number\|n)\s[0-9]+$|指定した番号`INT`の台詞を出力|
 |version|version$|yasunaのバージョンを出力|
 |oudon|^(お?うどん&#x7C;o?udon)$|[@keep_off07](https://twitter.com/keep_off07)さんにおうどん :ramen: をあげる [※2](#note2)|
 |osakana|^(お?さかな&#x7C;o?sakana)$|[@sasairc_2](https://twitter.com/sasairc_2)におさかな :fish: をあげる|
