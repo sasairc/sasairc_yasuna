@@ -4,17 +4,25 @@
 
 int main(int argc, char* argv[])
 {
-    char*   buf = NULL;
+    int         ret = 0;
+
+    char*       buf = NULL;
+
+    N_CIPHER*   n_cipher;
 
     if (argc < 0)
         return 1;
 
-    if ((buf = decode_n_cipher(argv[1], "くそぅ", "！")) != NULL)
+    init_n_cipher(&n_cipher);
+    n_cipher->config(&n_cipher, "くそぅ\0", "！\0");
+
+    if ((buf = n_cipher->decode(&n_cipher, argv[1])) != NULL)
         fprintf(stdout, "%s\n", buf);
     else
-        return 2;
+        ret = 2;
 
     free(buf);
+    n_cipher->release(n_cipher);
 
-    return 0;
+    return ret;
 }
