@@ -265,15 +265,12 @@ while (1) {
     );
     $done_cv->recv;
 
-    #
-    # wait after retry
-    #
-    print_log("info", "stream unconnected, wait after retry...");
-
-    undef $sender;
     undef $listener;
 
-    my $wait = $connected ? 0 : 3;
+    #
+    # retry wait
+    #
+    my $wait = $connected ? 0:2;
 
     my $wait_cv = AE::cv;
     my $wait_t = AE::timer $wait, 0, $wait_cv;
