@@ -32,7 +32,12 @@ EOF
 % nohup ./reply.pl &!
 ```
 
-`periodic.pl`はcrontabへ登録して下さい。
+まれにセッションが切断する場合、以下のように crontab へ登録して下さい。
+
+```crontab
+27 8,20 * * * pkill -f 'reply.pl$'; /path/sasairc_yasuna/reply.pl > /dev/null 2>&1 &
+0 * * * * /path/sasairc_yasuna/periodic.pl
+```
 
 ## Permission
 
