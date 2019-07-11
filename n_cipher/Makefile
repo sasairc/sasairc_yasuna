@@ -1,7 +1,7 @@
 PREFIX	:= /usr/local
 CC	= cc
 RM	= rm
-CFLAGS	:= -O3 -march=armv8-a+crc -mtune=cortex-a53 -mfpu=crypto-neon-fp-armv8 -mfloat-abi=hard -ftree-vectorize -funsafe-math-optimizations -pipe
+CFLAGS  =
 LDFLAGS	= -lncipher
 
 all: n_cipher_encode n_cipher_decode
